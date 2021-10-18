@@ -18,26 +18,38 @@ class LocalSearch:
     def find(self, state: State, n_player: int, thinking_time: float) -> Tuple[str, str]:
         self.thinking_time = time() + thinking_time
 
+        best_value_so_far = countObjective(state)
+
         row = -1
-        current_best = {
+        neighbor = {
             'state': None,
             'shape': None,
             'col': None,
+            'value': None
+        }
+        selected = {
+            'state': state,
+            'shape': None,
+            'col': None,
+            'value': best_value_so_far
         }
 
-        #value initiation
-        while(row == -1 and time.time() <= self.thinking_time):
-            current_best['state'] = deepcopy(state)
-            current_best['col'] = random.randint(0, state.board.col)
-            current_best['shape'] = random.choice([ShapeConstant.CROSS, ShapeConstant.CIRCLE])
-            row = place(current_best['state'], n_player, current_best['shape'], current_best['col'])
+        # value initiation
+        while(time.time() <= self.thinking_time):
+            neighbor['state'] = deepcopy(state)
+            neighbor['col'] = random.randint(0, state.board.col)
+            neighbor['shape'] = random.choice(
+                [ShapeConstant.CROSS, ShapeConstant.CIRCLE])
+            row = place(neighbor['state'], n_player,
+                        neighbor['shape'], neighbor['col'])
+            neighbor['value'] = countObjective(neighbor['state'])
 
-        #local search
-        while time.time() <= self.thinking_time:
-
-            #TODO: implement local_search
-
-
-            best_movement = () #minimax algorithm
+            if(row != -1 and neighbor['value'] >= selected['value']):
+                selected['state'] = neighbor['state']
+                selected['shape'] = neighbor['shape']
+                selected['col'] = neighbor['col']
+                selected['value'] = neighbor['value']
+        
+        best_movement = (selected['col'], selected['shape'])
 
         return best_movement
