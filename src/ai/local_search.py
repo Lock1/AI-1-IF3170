@@ -6,7 +6,7 @@ from src.model import State
 
 from typing import Tuple, List
 
-from utility import place
+from src.utility import place
 
 from copy import deepcopy
 
