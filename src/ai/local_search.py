@@ -11,22 +11,22 @@ from src.utility import place, is_out
 from copy import deepcopy
 
 
-class LocalSearch:
+class LocalSearchGroup10:
     def __init__(self):
         self.__objective_multiplier = 100
-        self.__objective_extrema    = 10000
+        self.__objective_extrema    = 1000000
 
     def __streak_eval(self, streak: List[Piece]) -> int:
         # Assuming streak[0] is non-empty piece
         # Different shape -> shape_obj = 0
         # Different color -> color_obj = 0
         # shape_obj & color_obj = streak_length * streak_value_multiplier * player_multiplier
-        # Objective function = shape_obj + color_obj
+        # Objective function = if won -> return extrema value for player, else -> shape_obj + color_obj
 
         streak_shape = streak[0].shape
         streak_color = streak[0].color
-        shape_length = 0
-        color_length = 0
+        shape_length = 1
+        color_length = 1
         for i in range(1, GameConstant.N_COMPONENT_STREAK - 1):
             if streak[i].shape == streak_shape:
                 shape_length += 1
@@ -47,7 +47,8 @@ class LocalSearch:
                 shape_multiplier = 1
 
             if shape_length == GameConstant.N_COMPONENT_STREAK:
-                shape_obj = self.__objective_extrema * shape_multiplier
+                print("DETECTED\n\n\n")
+                return self.__objective_extrema * shape_multiplier
             else:
                 shape_obj = self.__objective_multiplier * shape_multiplier * shape_length
 
@@ -58,17 +59,18 @@ class LocalSearch:
                 color_multiplier = 1
 
             if color_length == GameConstant.N_COMPONENT_STREAK:
-                shape_obj = self.__objective_extrema * color_multiplier
+                print("DETECTED\n\n\n")
+                return self.__objective_extrema * color_multiplier
             else:
-                shape_obj = self.__objective_multiplier * color_multiplier * color_length
+                color_obj = self.__objective_multiplier * color_multiplier * color_length
 
         return shape_obj + color_obj
 
     def __objective_function(self, board: Board) -> int:
         # Player 1 -> Minimizer
         # Player 2 -> Maximizer
-        min_value = 0
-        max_value = 0
+        min_value = self.__objective_extrema
+        max_value = -self.__objective_extrema
         streak_direction = [(-1, 0), (1, 0), (0, -1), (0, 1), (-1, -1), (-1, 1), (1, -1), (1, 1)]
 
         for row in range(board.row):
@@ -96,13 +98,18 @@ class LocalSearch:
                         max_value = max(max_value, objective_value)
                         min_value = min(min_value, objective_value)
 
-        return max_value + min_value
+        if max_value == self.__objective_extrema:
+            return self.__objective_extrema
+        elif min_value == -self.__objective_extrema:
+            return -self.__objective_extrema
+        else:
+            return max_value + min_value
 
     def __compare_obj(self, current_best_value: int, compared_value: int, n_player: int):
         if n_player == 0:
-            return compared_value <= current_best_value
+            return compared_value < current_best_value
         elif n_player == 1:
-            return compared_value >= current_best_value
+            return compared_value > current_best_value
 
     def find(self, state: State, n_player: int, thinking_time: float) -> Tuple[str, str]:
         self.thinking_time = time() + thinking_time
@@ -112,13 +119,17 @@ class LocalSearch:
         neighbor = {
             'shape'    : None,
             'index_col': None,
-            'value'    : None
+            'value'    : None,
+            'block'    : None,
+            'win'      : None
         }
 
         current_best = {
             'shape'    : None,
             'index_col': None,
-            'value'    : None
+            'value'    : None,
+            'block'    : None,
+            'win'      : None
         }
 
         # value initiation
@@ -129,11 +140,39 @@ class LocalSearch:
             ret_code              = place(temp_state, n_player, neighbor['shape'], neighbor['index_col'])
             neighbor['value']     = self.__objective_function(temp_state.board)
 
-            if current_best['value'] is None or (ret_code != -1 and self.__compare_obj(current_best['value'], neighbor['value'], n_player)):
+            # Percobaan pengecekan kemenangan
+            player1_win     = (n_player == 0 and neighbor['value'] == -self.__objective_extrema)
+            player2_win     = (n_player == 1 and neighbor['value'] == self.__objective_extrema)
+            neighbor['win'] = player1_win or player2_win
+
+            # Percobaan penggantian menjadi blocking move
+            block_second_ply = (n_player == 0 and neighbor['value'] == self.__objective_extrema)
+            block_first_ply  = (n_player == 1 and neighbor['value'] == -self.__objective_extrema)
+            if block_second_ply or block_first_ply:
+                neighbor['block'] = True
+                neighbor['shape'] = self.players[n_player].shape
+                temp_state        = deepcopy(state)
+                ret_code          = place(temp_state, n_player, neighbor['shape'], neighbor['index_col'])
+            else:
+                neighbor['block'] = False
+
+            first_iteration      = (current_best['value'] is None)
+            if not first_iteration:
+                compare_condition  = (ret_code != -1 and self.__compare_obj(current_best['value'], neighbor['value'], n_player))
+                replace_non_block  = (compare_condition and not current_best['block'])
+                replace_block_move = (compare_condition and current_best['block'] and neighbor['block'])
+
+            if replace_block_move:
+                print("Block change")
+
+            if first_iteration or (replace_non_block or replace_block_move and not current_best['win']):
                 current_best['shape']     = neighbor['shape']
                 current_best['index_col'] = neighbor['index_col']
                 current_best['value']     = neighbor['value']
+                current_best['block']     = neighbor['block']
+                current_best['win']       = neighbor['win']
 
+        print(current_best['value'], "< Best")
         best_movement = (current_best['index_col'], current_best['shape'])
         # print("\n\nMove")
         # print(best_movement)
