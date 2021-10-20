@@ -148,8 +148,12 @@ class MinimaxGroup10:
                             col   = column
                             shape = shapes
                             alpha = max(alpha, value)
-
+                    else :
+                        col   = column
+                        shape = shapes
                     if alpha >= beta:
+                        break
+                if alpha >= beta:
                         break
 
         # Minimizer
@@ -168,7 +172,12 @@ class MinimaxGroup10:
                             col   = column
                             shape = shapes
                             beta  = min(beta, value)
+                    else : 
+                        col   = column
+                        shape = shapes
                     if alpha >= beta:
+                        break
+                if alpha >= beta:
                         break
 
         move = [(col,shape), value]
