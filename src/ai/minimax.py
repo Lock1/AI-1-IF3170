@@ -118,11 +118,10 @@ class Minimax:
                 return 0
 
 
-    def MinimaxAlghorithm(self,board : Board,depth : int,alpha,beta,maximizing : bool):
-
-        if (depth == 0) :
-            print("{0} skornya")
-            print(board)
+    def MinimaxAlghorithm(self,board : Board,depth : int,alpha,beta,maximizing : bool, start_time : float, thinking_time : float):
+        timenow = time()
+        elapsedtime = timenow - start_time
+        if (depth == 0 or elapsedtime > thinking_time) :
             return [None,self.__objective_function(board)]
         
         if (maximizing):
@@ -136,7 +135,7 @@ class Minimax:
                     # score = self.__objective_function(new_board)
                     # print("\n\n board baru {0} depth {1} maximize, score : {2} \n\n".format(column,depth,score))
                     # print(new_board)
-                    new_score = self.MinimaxAlghorithm(new_board,depth-1,alpha,beta,False)[1]
+                    new_score = self.MinimaxAlghorithm(new_board,depth-1,alpha,beta,False,start_time,thinking_time)[1]
                     if new_score > value:
                         value = new_score
                         col = column
@@ -157,7 +156,7 @@ class Minimax:
                     # score = self.__objective_function(new_board)
                     # print("\n\n board baru {0} depth {1} maximize, score : {2} \n\n".format(column,depth,score))
                     # print(new_board)
-                    new_score = self.MinimaxAlghorithm(new_board,depth-1,alpha,beta,True)[1]
+                    new_score = self.MinimaxAlghorithm(new_board,depth-1,alpha,beta,True,start_time,thinking_time)[1]
                     if new_score < value:
                         value = new_score
                         col = column
@@ -173,9 +172,10 @@ class Minimax:
         self.thinking_time = time() + thinking_time
         self.players       = state.players
 
+        start_time = time()
         piece = Piece(state.players[n_player].shape,state.players[n_player].color)
         # best_movement = (random.randint(0, state.board.col), random.choice([ShapeConstant.CROSS, ShapeConstant.CIRCLE])) #minimax algorithm
-        col = self.MinimaxAlghorithm(state.board,2,-inf,inf,False)[0]
+        col = self.MinimaxAlghorithm(state.board,2,-inf,inf,False,start_time,thinking_time)[0]
         best_movement = col #minimax algorithm
         return best_movement
     
