@@ -27,7 +27,7 @@ class LocalSearchGroup10:
         streak_color = streak[0].color
         shape_length = 1
         color_length = 1
-        for i in range(1, GameConstant.N_COMPONENT_STREAK - 1):
+        for i in range(1, GameConstant.N_COMPONENT_STREAK):
             if streak[i].shape == streak_shape:
                 shape_length += 1
             elif streak[i].shape != ShapeConstant.BLANK:
@@ -47,7 +47,6 @@ class LocalSearchGroup10:
                 shape_multiplier = 1
 
             if shape_length == GameConstant.N_COMPONENT_STREAK:
-                print("DETECTED\n\n\n")
                 return self.__objective_extrema * shape_multiplier
             else:
                 shape_obj = self.__objective_multiplier * shape_multiplier * shape_length
@@ -59,7 +58,6 @@ class LocalSearchGroup10:
                 color_multiplier = 1
 
             if color_length == GameConstant.N_COMPONENT_STREAK:
-                print("DETECTED\n\n\n")
                 return self.__objective_extrema * color_multiplier
             else:
                 color_obj = self.__objective_multiplier * color_multiplier * color_length
@@ -120,7 +118,6 @@ class LocalSearchGroup10:
             'shape'    : None,
             'index_col': None,
             'value'    : None,
-            'block'    : None,
             'win'      : None
         }
 
@@ -128,7 +125,6 @@ class LocalSearchGroup10:
             'shape'    : None,
             'index_col': None,
             'value'    : None,
-            'block'    : None,
             'win'      : None
         }
 
@@ -145,39 +141,15 @@ class LocalSearchGroup10:
             player2_win     = (n_player == 1 and neighbor['value'] == self.__objective_extrema)
             neighbor['win'] = player1_win or player2_win
 
-            # Percobaan penggantian menjadi blocking move
-            block_second_ply = (n_player == 0 and neighbor['value'] == self.__objective_extrema)
-            block_first_ply  = (n_player == 1 and neighbor['value'] == -self.__objective_extrema)
-            if block_second_ply or block_first_ply:
-                neighbor['block'] = True
-                neighbor['shape'] = self.players[n_player].shape
-                temp_state        = deepcopy(state)
-                ret_code          = place(temp_state, n_player, neighbor['shape'], neighbor['index_col'])
-            else:
-                neighbor['block'] = False
-
             first_iteration      = (current_best['value'] is None)
             if not first_iteration:
                 compare_condition  = (ret_code != -1 and self.__compare_obj(current_best['value'], neighbor['value'], n_player))
-                replace_non_block  = (compare_condition and not current_best['block'])
-                replace_block_move = (compare_condition and current_best['block'] and neighbor['block'])
 
-            if replace_block_move:
-                print("Block change")
-
-            if first_iteration or (replace_non_block or replace_block_move and not current_best['win']):
+            if first_iteration or (compare_condition and not current_best['win']):
                 current_best['shape']     = neighbor['shape']
                 current_best['index_col'] = neighbor['index_col']
                 current_best['value']     = neighbor['value']
-                current_best['block']     = neighbor['block']
                 current_best['win']       = neighbor['win']
 
-        print(current_best['value'], "< Best")
         best_movement = (current_best['index_col'], current_best['shape'])
-        # print("\n\nMove")
-        # print(best_movement)
-        # best_state = deepcopy(state)
-        # place(best_state, n_player, current_best['shape'], current_best['index_col'])
-        # print(self.__objective_function(best_state.board))
-        # print("\n\n")
         return best_movement
